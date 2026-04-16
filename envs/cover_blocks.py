@@ -14,10 +14,11 @@ class cover_blocks(Base_Task):
         for i in range(3):
             cover_pose = rand_pose(
                 xlim=[self.cover_x[i], self.cover_x[i]],
-                ylim=[self.cover_y[i], self.cover_y[i]],
+                ylim=[-0.10, 0.00],
                 qpos=[0.5, 0.5, 0.5, 0.5],
                 ylim_prop=True,
-                rotate_rand=False,
+                rotate_rand=True,
+                rotate_lim=[0, 0, 0.5],
             )
             self.cover_pose_lst.append(deepcopy(cover_pose))
         self.quat_of_target_pose = [0.0, 1, 0.0, 0.0]
@@ -41,7 +42,7 @@ class cover_blocks(Base_Task):
         for i in range(3):
             block_pose = rand_pose(
                 xlim=[x_block, x_block],
-                ylim=[-0.18, -0.18],
+                ylim=[-0.23, -0.13],
                 zlim=[0.741 + block_half_size],
                 qpos=[1,0,0,0],
                 rotate_rand=False,

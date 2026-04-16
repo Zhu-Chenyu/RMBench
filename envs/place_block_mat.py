@@ -32,10 +32,11 @@ class place_block_mat(Base_Task):
         
         mats_pose = []
         x_mat = -0.3
+        mat_y = np.random.uniform(-0.15, -0.05)
         for _ in range(6):
             mat_pos = rand_pose(
                 xlim=[x_mat, x_mat],
-                ylim=[-0.1, -0.1],
+                ylim=[mat_y, mat_y],
                 qpos=[1, 0, 0, 0],
             )
             mats_pose.append(mat_pos)
@@ -46,8 +47,8 @@ class place_block_mat(Base_Task):
             self.mat_lst.append(mat)
         
         self.green_pos = rand_pose(
-                xlim=[0, 0],
-                ylim=[-0.25, -0.25],
+                xlim=[-0.08, 0.08],
+                ylim=[-0.30, -0.20],
                 qpos=[1, 0, 0, 0],
             )
         self.green_mat = create_mat(green_color, self.green_pos)

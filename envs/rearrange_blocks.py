@@ -11,10 +11,10 @@ class rearrange_blocks(Base_Task):
             scene=self,
             modelname="005_button",
             modelid=10124,
-            xlim=[-0.25, -0.15],
-            ylim=[-0.2, -0.1],
-            rotate_rand=False,
-            rotate_lim=[0, 0, np.pi / 16],
+            xlim=[-0.28, -0.12],
+            ylim=[-0.25, -0.05],
+            rotate_rand=True,
+            rotate_lim=[0, 0, np.pi / 4],
             qpos=[1, 0, 0, 0],
             fix_root_link=True,
         )
@@ -45,7 +45,7 @@ class rearrange_blocks(Base_Task):
         self.block_half_size = 0.02
         blocks_pose = []
         x_block = 0.02
-        self.block_y_lim = np.random.uniform(-0.15, -0.08)
+        self.block_y_lim = np.random.uniform(-0.20, -0.05)
         for _ in range(3):
             block_pos = rand_pose(
                 xlim=[x_block, x_block],

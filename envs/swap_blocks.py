@@ -10,10 +10,11 @@ class swap_blocks(Base_Task):
     def load_actors(self):
         x = -0.14
         basket_lst = []
+        basket_y = np.random.uniform(-0.20, -0.10)
         for i in range(3):
             basket_pose = rand_pose(
                 xlim=[x, x],
-                ylim=[-0.15, -0.15],
+                ylim=[basket_y, basket_y],
                 qpos=[0.5, 0.5, 0.5, 0.5],
             )
             x += 0.14
@@ -37,12 +38,12 @@ class swap_blocks(Base_Task):
         blocks_lst = []
         for i in range(3):
             block_pose = rand_pose(
-                xlim=[x_block-0.005, x_block+0.005],
-                ylim=[-0.15-0.005, -0.15+0.005],
+                xlim=[x_block-0.01, x_block+0.01],
+                ylim=[basket_y-0.01, basket_y+0.01],
                 zlim=[0.75 + block_half_size],
                 qpos=[1,0,0,0],
                 rotate_rand=True,
-                rotate_lim=[0, 0, 0.75],
+                rotate_lim=[0, 0, np.pi],
             )
             x_block += 0.14
             blocks_lst.append(deepcopy(block_pose))
@@ -71,10 +72,10 @@ class swap_blocks(Base_Task):
             scene=self,
             modelname="005_button",
             modelid=10124,
-            xlim=[-0.0, -0.0],
-            ylim=[-0.28, -0.28],
-            rotate_rand=False,
-            rotate_lim=[0, 0, np.pi / 16],
+            xlim=[-0.05, 0.05],
+            ylim=[-0.33, -0.23],
+            rotate_rand=True,
+            rotate_lim=[0, 0, np.pi / 4],
             qpos=[1, 0, 0, 0],
             fix_root_link=True,
         )

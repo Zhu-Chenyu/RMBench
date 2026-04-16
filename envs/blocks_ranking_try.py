@@ -11,10 +11,11 @@ class blocks_ranking_try(Base_Task):
     def load_actors(self):
         block_pose_lst = []
         x_block_pose = 0.04
+        block_y = np.random.uniform(-0.15, -0.05)
         for _ in range(3):
             block_pose = rand_pose(
                 xlim=[x_block_pose, x_block_pose],
-                ylim=[-0.1, -0.1],
+                ylim=[block_y, block_y],
                 zlim=[0.765],
                 qpos=[1, 0, 0, 0],
                 rotate_rand=False,
@@ -52,10 +53,10 @@ class blocks_ranking_try(Base_Task):
             scene=self,
             modelname="005_button",
             modelid=10124,
-            xlim=[-0.2, -0.2],
-            ylim=[-0.1, -0.1],
-            rotate_rand=False,
-            rotate_lim=[0, 0, np.pi / 16],
+            xlim=[-0.25, -0.15],
+            ylim=[-0.20, -0.10],
+            rotate_rand=True,
+            rotate_lim=[0, 0, np.pi / 4],
             qpos=[1, 0, 0, 0],
             fix_root_link=True,
         )

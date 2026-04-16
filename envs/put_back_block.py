@@ -11,10 +11,10 @@ class put_back_block(Base_Task):
             scene=self,
             modelname="005_button",
             modelid=10124,
-            xlim=[-0.25, -0.25],
-            ylim=[-0.1, -0.1],
-            rotate_rand=False,
-            rotate_lim=[0, 0, np.pi / 16],
+            xlim=[-0.30, -0.20],
+            ylim=[-0.15, -0.05],
+            rotate_rand=True,
+            rotate_lim=[0, 0, np.pi / 4],
             qpos=[1, 0, 0, 0],
             fix_root_link=True,
         )
@@ -44,11 +44,13 @@ class put_back_block(Base_Task):
         
         mat_half_size = [0.04, 0.04, 0.0005]
         mats_pose = []
+        x_offset = np.random.uniform(-0.03, 0.03)
+        y_offset = np.random.uniform(-0.04, 0.04)
         x_mat = 0.0
         for _ in range(2):
             mat_pos = rand_pose(
-                xlim=[x_mat, x_mat],
-                ylim=[-0.1, -0.1],
+                xlim=[x_mat + x_offset, x_mat + x_offset],
+                ylim=[-0.1 + y_offset, -0.1 + y_offset],
                 qpos=[1, 0, 0, 0],
             )
             mats_pose.append(mat_pos)
@@ -56,8 +58,8 @@ class put_back_block(Base_Task):
         y_mat = -0.2
         for _ in range(2):
             mat_pos = rand_pose(
-                xlim=[0.1, 0.1],
-                ylim=[y_mat, y_mat],
+                xlim=[0.1 + x_offset, 0.1 + x_offset],
+                ylim=[y_mat + y_offset, y_mat + y_offset],
                 qpos=[1, 0, 0, 0],
             )
             mats_pose.append(mat_pos)
@@ -71,7 +73,7 @@ class put_back_block(Base_Task):
         self.mat_name = ['left', 'right', 'front', 'back'][block_id]
         self.block = create_block(mats_pose[block_id])
         self.target_pose = self.mat_lst[block_id].get_pose().p
-        self.center_pose = [0.1,-0.1,0.765,1,0,0,0]
+        self.center_pose = [0.1 + x_offset, -0.1 + y_offset, 0.765, 1, 0, 0, 0]
         self.stage_id = 0
     
     def play_once(self):

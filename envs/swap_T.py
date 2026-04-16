@@ -8,20 +8,20 @@ class swap_T(Base_Task):
 
     def load_actors(self):
         rand_pos1 = rand_pose(
-            xlim = [-0.09, -0.09],
-            ylim = [-0.15, -0.1],
+            xlim = [-0.12, -0.06],
+            ylim = [-0.20, -0.08],
             zlim = [0.78, 0.78],
             qpos = [1,0,0,0],
             rotate_rand=True,
-            rotate_lim=[0, 0, 0.75],
+            rotate_lim=[0, 0, np.pi],
         )
         rand_pos2 = rand_pose(
-            xlim = [0.09, 0.09],
-            ylim = [-0.15, -0.1],
+            xlim = [0.06, 0.12],
+            ylim = [-0.20, -0.08],
             zlim = [0.78, 0.78],
             qpos = [1,0,0,0],
             rotate_rand=True,
-            rotate_lim=[0, 0, 0.75],
+            rotate_lim=[0, 0, np.pi],
         )
 
         def create_T_block(T_block_pos, model_id):

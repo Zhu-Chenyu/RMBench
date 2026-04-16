@@ -20,25 +20,26 @@ class press_button(Base_Task):
         self.card_id_2 = np.random.randint(1, 11-self.card_id_1)
         card_pose_1 = rand_pose(
             xlim=[-0.15, -0.15],
-            ylim=[0.0, 0.0],
+            ylim=[-0.05, 0.05],
             qpos=[1, 0, 0, 0],
         )
         card_pose_2 = rand_pose(
             xlim=[0.02, 0.02],
-            ylim=[0.0, 0.0],
+            ylim=[-0.05, 0.05],
             qpos=[1, 0, 0, 0],
         )
         self.card_1 = create_card(card_pose_1, self.card_id_1)
         self.card_2 = create_card(card_pose_2, self.card_id_2)
 
+        button_y = np.random.uniform(-0.20, -0.10)
         self.button1 = rand_create_sapien_urdf_obj(
             scene=self,
             modelname="005_button",
             modelid=10124,
             xlim=[-0.15, -0.15],
-            ylim=[-0.15, -0.15],
-            rotate_rand=False,
-            rotate_lim=[0, 0, np.pi / 16],
+            ylim=[button_y, button_y],
+            rotate_rand=True,
+            rotate_lim=[0, 0, np.pi / 4],
             qpos=[1, 0, 0, 0],
             fix_root_link=True,
         )
@@ -50,9 +51,9 @@ class press_button(Base_Task):
             modelname="005_button",
             modelid=10124,
             xlim=[-0.0, -0.0],
-            ylim=[-0.15, -0.15],
-            rotate_rand=False,
-            rotate_lim=[0, 0, np.pi / 16],
+            ylim=[button_y, button_y],
+            rotate_rand=True,
+            rotate_lim=[0, 0, np.pi / 4],
             qpos=[1, 0, 0, 0],
             fix_root_link=True,
         )
@@ -63,9 +64,9 @@ class press_button(Base_Task):
             modelname="006_check_button",
             modelid=10124,
             xlim=[0.15, 0.15],
-            ylim=[-0.15, -0.15],
-            rotate_rand=False,
-            rotate_lim=[0, 0, np.pi / 16],
+            ylim=[button_y, button_y],
+            rotate_rand=True,
+            rotate_lim=[0, 0, np.pi / 4],
             qpos=[0, 0, 0, 1],
             fix_root_link=True,
         )

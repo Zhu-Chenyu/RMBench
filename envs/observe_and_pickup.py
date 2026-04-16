@@ -39,11 +39,11 @@ class observe_and_pickup(Base_Task):
                 
                     for inner_step in range(max_inner):
                         rand_pose_cluttered = rand_pose(
-                            xlim=[-0.35, 0.35],
-                            ylim=[-0.25, -0.1],
+                            xlim=[-0.38, 0.38],
+                            ylim=[-0.28, -0.08],
                             qpos=[0.707, 0.707, 0.0, 0.0],
                             rotate_rand=True,
-                            rotate_lim=[0, np.pi / 8, 0],
+                            rotate_lim=[0, np.pi / 4, 0],
                         )
                         if abs(rand_pose_cluttered.p[0]) >= 0.07:
                             break
