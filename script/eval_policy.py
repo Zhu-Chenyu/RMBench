@@ -121,7 +121,9 @@ def main(usr_args):
     else:
         embodiment_name = str(embodiment_type[0]) + "+" + str(embodiment_type[1])
 
-    save_dir = Path(f"eval_result/{task_name}/{policy_name}/{task_config}/{ckpt_setting}/{current_time}")
+    # Flat layout: one folder per run, no per-task/policy/config/ckpt nesting.
+    timestamp = current_time.replace(" ", "_").replace(":", "-")
+    save_dir = Path(f"eval_result/{policy_name}__{task_name}__{timestamp}")
     save_dir.mkdir(parents=True, exist_ok=True)
 
     log_file = save_dir / "eval_log.txt"
