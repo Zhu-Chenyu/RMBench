@@ -1,0 +1,14 @@
+# GR00T_Mem deploy config — passed in as `usr_args` to get_model().
+policy_name: GR00T_Mem
+instruction_type: unseen
+
+# Address of the GR00T inference server (run separately in Isaac-GR00T's venv)
+server_host: localhost
+server_port: 5555
+
+action_steps: 16
+# Use a single fixed memory string for all tasks (Step-1 sanity check).
+# To use a per-task memory, set memory_text_path to a JSON file like:
+#   { "clean_table": "Memory: ...", "observe_and_pickup": "Memory: ..." }
+memory_text: "Memory: initial state, no objects moved yet."
+memory_text_path: null
