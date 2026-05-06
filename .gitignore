@@ -29,3 +29,6 @@ envs/curobo/*
 
 /*.json*
 /*.txt
+
+# our project additions
+logs/
