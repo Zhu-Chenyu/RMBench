@@ -550,6 +550,66 @@ class TrainConfig:
 # Use `get_config` if you need to get a config by name in your code.
 _CONFIGS = [
     ###
+    ### RMBench: single fixed-manipulation task (put_back_block), pi05 LoRA
+    ###
+    # Dataset is a LeRobot v2.0 view of the GR00T-converted RMBench subset
+    # `gr00t_put_back_block_instruction_only` (250 episodes / 90,857 frames @ 25fps,
+    # 14-dim agilex_aloha joint state+action: left_arm(6)+left_gripper(1)+right_arm(6)+right_gripper(1)).
+    # Point HF_LEROBOT_HOME at the directory holding `rmbench/put_back_block`.
+    #
+    # The conversion keeps 2 of RMBench's camera views (head, front). They are mapped onto
+    # Aloha slots as head -> cam_high (base_0_rgb) and front -> cam_left_wrist (left_wrist_0_rgb);
+    # AlohaInputs fills the unused right-wrist slot with zeros and masks it off.
+    TrainConfig(
+        name="pi05_rmbench_put_back_block_lora",
+        model=pi0_config.Pi0Config(
+            pi05=True,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ),
+        data=LeRobotAlohaDataConfig(
+            repo_id="rmbench/put_back_block",
+            # RoboTwin/RMBench sim joint + gripper conventions, not a real Aloha runtime,
+            # so skip the pi-internal joint flip / gripper reparametrization.
+            adapt_to_pi=False,
+            repack_transforms=_transforms.Group(
+                inputs=[
+                    _transforms.RepackTransform(
+                        {
+                            "images": {
+                                "cam_high": "observation.images.head",
+                                "cam_left_wrist": "observation.images.front",
+                            },
+                            "state": "observation.state",
+                            "actions": "action",
+                            # Injected by PromptFromLeRobotTask; must be carried through the
+                            # repack or TokenizePrompt will fail with "Prompt is required".
+                            "prompt": "prompt",
+                        }
+                    )
+                ]
+            ),
+            base_config=DataConfig(
+                prompt_from_task=True,
+            ),
+        ),
+        freeze_filter=pi0_config.Pi0Config(
+            pi05=True,
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
+        # Sized for a single RTX 6000 Ada (49GB); scale up once the pipeline is verified.
+        num_train_steps=3000,
+        batch_size=16,
+        num_workers=4,
+        log_interval=10,
+        save_interval=500,
+        keep_period=None,
+        wandb_enabled=False,
+        fsdp_devices=1,
+    ),
+    ###
     ### finetune config for robotwin
     ###
     # pi05_base by full
