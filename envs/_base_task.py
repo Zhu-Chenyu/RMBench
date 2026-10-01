@@ -69,7 +69,7 @@ class Base_Task(gym.Env):
         self.dual_arm = kwags.get("dual_arm", True)
         self.eval_mode = kwags.get("eval_mode", False)
 
-        self.need_topp = True  # TODO
+        self.need_topp = os.environ.get("RMBENCH_NEED_TOPP", "1") != "0"  # TODO
 
         # Random
         random_setting = kwags.get("domain_randomization")
@@ -98,6 +98,7 @@ class Base_Task(gym.Env):
         self.now_obs = {}
         self.take_action_cnt = 0
         self.eval_video_path = kwags.get("eval_video_save_dir", None)
+        self.eval_video_camera = kwags.get("eval_video_camera", "head_camera")
 
         self.save_freq = kwags.get("save_freq")
         self.world_pcd = None
@@ -393,7 +394,10 @@ class Base_Task(gym.Env):
         """
         if not hasattr(self, "robot"):
             self.robot = Robot(self.scene, self.need_topp, **kwags)
-            self.robot.set_planner(self.scene)
+            if os.environ.get("RMBENCH_SKIP_PLANNER", "0") == "1":
+                self.robot.communication_flag = False
+            if os.environ.get("RMBENCH_SKIP_PLANNER", "0") != "1":
+                self.robot.set_planner(self.scene)
             self.robot.init_joints()
         else:
             self.robot.reset(self.scene, self.need_topp, **kwags)
@@ -606,6 +610,18 @@ class Base_Task(gym.Env):
             self.eval_video_ffmpeg.stdin.close()
             self.eval_video_ffmpeg.wait()
             del self.eval_video_ffmpeg
+
+    def _write_eval_video_frame(self):
+        if self.eval_video_path is None:
+            return
+        self._update_render()
+        self.cameras.update_picture()
+        if self.eval_video_camera == "third_view":
+            frame = self.cameras.get_third_view_rgb()
+        else:
+            rgb = self.cameras.get_rgb()
+            frame = rgb[self.eval_video_camera]["rgb"]
+        self.eval_video_ffmpeg.stdin.write(np.ascontiguousarray(frame).tobytes())
 
     def delay(self, delay_time, save_freq=None, language_annotation=None):
         render_freq = self.render_freq
@@ -1528,8 +1544,7 @@ class Base_Task(gym.Env):
 
         eval_video_freq = 1  # fixed
         if (self.eval_video_path is not None and self.take_action_cnt % eval_video_freq == 0):
-            # self.eval_video_ffmpeg.stdin.write(self.now_obs["observation"]["head_camera"]["rgb"].tobytes())
-            self.eval_video_ffmpeg.stdin.write(self.now_obs["third_view_rgb"].tobytes())
+            self._write_eval_video_frame()
 
         self.take_action_cnt += 1
         print(f"step: \033[92m{self.take_action_cnt} / {self.step_lim}\033[0m", end="\r")
@@ -1590,6 +1605,15 @@ class Base_Task(gym.Env):
             # TODO
             topp_left_flag, topp_right_flag = True, True
 
+            def fixed_step_qpos_result(path, n_step=50):
+                idx = np.linspace(0, len(path) - 1, n_step)
+                lo = np.floor(idx).astype(int)
+                hi = np.clip(lo + 1, 0, len(path) - 1)
+                alpha = (idx - lo)[:, None]
+                position = path[lo] * (1 - alpha) + path[hi] * alpha
+                velocity = np.zeros_like(position)
+                return {"position": position, "velocity": velocity}
+
             try:
                 times, left_pos, left_vel, acc, duration = (self.robot.left_mplib_planner.TOPP(left_path,
                                                                                             1 / 250,
@@ -1599,12 +1623,12 @@ class Base_Task(gym.Env):
                 left_n_step = left_result["position"].shape[0]
             except Exception as e:
                 # print("left arm TOPP error: ", e)
-                topp_left_flag = False
                 left_n_step = 50  # fixed
+                left_result = fixed_step_qpos_result(left_path, left_n_step)
 
             if left_n_step == 0:
-                topp_left_flag = False
                 left_n_step = 50  # fixed
+                left_result = fixed_step_qpos_result(left_path, left_n_step)
 
             if self.is_dual_arm:
                 try:
@@ -1616,12 +1640,12 @@ class Base_Task(gym.Env):
                     right_n_step = right_result["position"].shape[0]
                 except Exception as e:
                     # print("right arm TOPP error: ", e)
-                    topp_right_flag = False
                     right_n_step = 50  # fixed
+                    right_result = fixed_step_qpos_result(right_path, right_n_step)
 
                 if right_n_step == 0:
-                    topp_right_flag = False
                     right_n_step = 50  # fixed
+                    right_result = fixed_step_qpos_result(right_path, right_n_step)
         
         elif action_type == 'ee':
 
@@ -1716,7 +1740,7 @@ class Base_Task(gym.Env):
                 self.eval_success = True
                 self.get_obs() # update obs
                 if (self.eval_video_path is not None):
-                    self.eval_video_ffmpeg.stdin.write(self.now_obs["third_view_rgb"].tobytes())
+                    self._write_eval_video_frame()
                 return
 
         self._update_render()

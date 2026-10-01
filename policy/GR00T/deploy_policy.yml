@@ -1,0 +1,19 @@
+# Basic experiment configuration used by RMBench/script/eval_policy.py
+policy_name: null
+task_name: null
+task_config: null
+ckpt_setting: null
+seed: null
+instruction_type: unseen
+
+# GR00T policy options.
+model_path: null
+model_host: null
+model_port: 5555
+embodiment_tag: NEW_EMBODIMENT
+device: cuda
+execute_horizon: 8
+head_camera_key: head_camera
+front_camera_key: front_camera
+language_mode: instruction
+test_num: 100

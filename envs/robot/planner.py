@@ -3,14 +3,25 @@ import mplib
 import numpy as np
 import pdb
 import traceback
+import os
 import numpy as np
 import toppra as ta
 from mplib.sapien_utils import SapienPlanner, SapienPlanningWorld
 import transforms3d as t3d
 import envs._GLOBAL_CONFIGS as CONFIGS
 
+# Compatibility for newer warp-lang: curobo expects wp.torch.* helpers.
+try:
+    import warp as _wp
+    if not hasattr(_wp, "torch"):
+        _wp.torch = _wp
+except Exception:
+    pass
+
 
 try:
+    if os.environ.get("RMBENCH_SKIP_CUROBO_IMPORT", "0") == "1":
+        raise ImportError("Skipping CuroboPlanner import for replay sanity check")
     # ********************** CuroboPlanner (optional) **********************
     from curobo.types.math import Pose as CuroboPose
     import time
@@ -273,7 +284,17 @@ try:
 except Exception as e:
     print('[planner.py]: Something wrong happened when importing CuroboPlanner! Please check if Curobo is installed correctly. If the problem still exists, you can install Curobo from https://github.com/NVlabs/curobo manually.')
     print('Exception traceback:')
-    traceback.print_exc()
+
+    class CuroboPlanner:
+        def __init__(self, *args, **kwargs):
+            pass
+        def plan_pose(self, *args, **kwargs):
+            return {"status": "Skipped", "position": np.zeros((0, 6)), "velocity": np.zeros((0, 6))}
+        def update_point_cloud(self, *args, **kwargs):
+            pass
+        def plan_grippers(self, now_val, target_val):
+            vals = np.linspace(now_val, target_val, 50)
+            return {"num_step": 50, "per_step": (target_val - now_val)/50, "result": vals}
 
 
 # ********************** MplibPlanner **********************

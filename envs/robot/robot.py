@@ -143,7 +143,7 @@ class Robot:
                 self.right_conn.send({"cmd": "reset"})
                 _ = self.right_conn.recv()
         else:
-            if not isinstance(self.left_planner, CuroboPlanner) or (self.is_dual_arm and not isinstance(self.right_planner, CuroboPlanner)):
+            if os.environ.get("RMBENCH_SKIP_PLANNER", "0") != "1" and (not hasattr(self, "left_planner") or not isinstance(self.left_planner, CuroboPlanner) or (self.is_dual_arm and (not hasattr(self, "right_planner") or not isinstance(self.right_planner, CuroboPlanner)))):
                 self.set_planner(scene=scene)
 
         self.init_joints()
@@ -370,6 +370,10 @@ class Robot:
             self.left_conn.send({"cmd": "plan_grippers", "now_val": now_val, "target_val": target_val})
             return self.left_conn.recv()
         else:
+            if not hasattr(self, "left_planner"):
+                num_step = 50
+                vals = np.linspace(now_val, target_val, num_step)
+                return {"num_step": num_step, "per_step": (target_val - now_val) / num_step, "result": vals}
             return self.left_planner.plan_grippers(now_val, target_val)
 
     def right_plan_grippers(self, now_val, target_val):
@@ -377,6 +381,10 @@ class Robot:
             self.right_conn.send({"cmd": "plan_grippers", "now_val": now_val, "target_val": target_val})
             return self.right_conn.recv()
         else:
+            if not hasattr(self, "right_planner"):
+                num_step = 50
+                vals = np.linspace(now_val, target_val, num_step)
+                return {"num_step": num_step, "per_step": (target_val - now_val) / num_step, "result": vals}
             return self.right_planner.plan_grippers(now_val, target_val)
 
     def left_plan_multi_path(
