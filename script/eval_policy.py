@@ -219,7 +219,12 @@ def eval_policy(task_name,
     print(f"\033[34mTask Name: {args['task_name']}\033[0m")
     print(f"\033[34mPolicy Name: {args['policy_name']}\033[0m")
 
-    expert_check = True
+    # The expert check replays the CuRobo-planned demonstration to confirm a seed is
+    # solvable before handing it to the policy. CuRobo is not installed here (and is
+    # not needed to execute a policy, which emits joint targets directly), so allow
+    # turning it off. Trade-off: seeds are no longer pre-validated, so an occasional
+    # unsolvable initial state can appear and the success rate is a slight underestimate.
+    expert_check = os.environ.get("RMBENCH_EXPERT_CHECK", "1") != "0"
     TASK_ENV.suc = 0
     TASK_ENV.test_num = 0
 
@@ -255,10 +260,11 @@ def eval_policy(task_name,
                 args["render_freq"] = render_freq
                 continue
             except Exception as e:
-                # stack_trace = traceback.format_exc()
-                # print(" -------------")
-                # print("Error: ", e)
-                # print(" -------------")
+                import traceback as _tb
+                print(" ------------- EPISODE ERROR -------------")
+                print("Error:", repr(e))
+                _tb.print_exc()
+                print(" -----------------------------------------")
                 TASK_ENV.close_env()
                 now_seed += 1
                 args["render_freq"] = render_freq
@@ -276,9 +282,18 @@ def eval_policy(task_name,
         args["render_freq"] = render_freq
 
         TASK_ENV.setup_demo(now_ep_num=now_id, seed=now_seed, is_test=True, **args)
-        episode_info_list = [episode_info["info"]]
-        results = generate_episode_descriptions(args["task_name"], episode_info_list, test_num)
-        instruction = np.random.choice(results[0][instruction_type])
+        # Per-episode descriptions are derived from the expert replay episode_info. With
+        # the expert check disabled that is unavailable, so fall back to a fixed
+        # instruction. RMBENCH_FIXED_INSTRUCTION should match what the policy trained on:
+        # pi05_rmbench_put_back_block_lora saw exactly one phrasing, so sampling
+        # paraphrases here would test generalization the model was never trained for.
+        fixed_instruction = os.environ.get("RMBENCH_FIXED_INSTRUCTION")
+        if fixed_instruction:
+            instruction = fixed_instruction
+        else:
+            episode_info_list = [episode_info["info"]]
+            results = generate_episode_descriptions(args["task_name"], episode_info_list, test_num)
+            instruction = np.random.choice(results[0][instruction_type])
         TASK_ENV.set_instruction(instruction=instruction)  # set language instruction
 
         if TASK_ENV.eval_video_path is not None:
@@ -312,12 +327,35 @@ def eval_policy(task_name,
 
         succ = False
         reset_func(model)
-        while TASK_ENV.take_action_cnt < TASK_ENV.step_lim:
+        # Progress + throughput instrumentation: a silent 500-step episode gives no way
+        # to tell "slow sim" from "wedged", and RMBENCH_STEP_LIM lets a short smoke run
+        # cap the episode without editing _eval_step_limit.yml.
+        import time as _time
+        _ep_t0 = _time.time()
+        _last_report = _ep_t0
+        _step_lim = int(os.environ.get("RMBENCH_STEP_LIM", TASK_ENV.step_lim))
+        print(f"[episode {TASK_ENV.test_num}] step_lim={_step_lim}", flush=True)
+        while TASK_ENV.take_action_cnt < _step_lim:
             observation = TASK_ENV.get_obs()
             eval_func(TASK_ENV, model, observation)
+            _now = _time.time()
+            if _now - _last_report > 15:
+                _n = TASK_ENV.take_action_cnt
+                _el = _now - _ep_t0
+                print(
+                    f"[episode {TASK_ENV.test_num}] step {_n}/{_step_lim} "
+                    f"elapsed {_el:.0f}s ({_n / max(_el, 1e-6):.2f} steps/s)",
+                    flush=True,
+                )
+                _last_report = _now
             if TASK_ENV.eval_success:
                 succ = True
                 break
+        print(
+            f"[episode {TASK_ENV.test_num}] finished at step {TASK_ENV.take_action_cnt} "
+            f"in {_time.time() - _ep_t0:.0f}s",
+            flush=True,
+        )
         task_total_reward += TASK_ENV.max_reward
         if TASK_ENV.eval_video_path is not None:
             TASK_ENV._del_eval_video_ffmpeg()

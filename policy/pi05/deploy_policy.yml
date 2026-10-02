@@ -4,10 +4,10 @@ task_name: null
 task_config: null
 ckpt_setting: null
 seed: null
-instruction_type: unseen
+instruction_type: seen  # model trained on the single seen phrasing
 
 # Add Parameters You Need
 train_config_name: null
 model_name: null
-checkpoint_id: 30000
+checkpoint_id: 3000
 pi0_step: 50
