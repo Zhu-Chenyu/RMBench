@@ -7,6 +7,7 @@
 # reset. One server call = one memory write; the returned chunk's first pi0_step actions
 # are executed open-loop, as for the baseline.
 
+import json
 import os
 
 import numpy as np
@@ -40,12 +41,40 @@ def get_model(usr_args):
     return MemoryClient("127.0.0.1", port, usr_args["pi0_step"])
 
 
+# Optional per-action diagnostics (put_back_block success stages): set MB_DIAG_LOG=<file.jsonl>.
+# Logs the task state check_success() works from: stage_id, press_cnt / press_flag, block pose
+# vs. the centre and original (target) poses, and whether the right gripper is open.
+DIAG_LOG = os.environ.get("MB_DIAG_LOG")
+
+
+def _diag(TASK_ENV):
+    blk = getattr(TASK_ENV, "block", None)
+    if blk is None:
+        return
+    rec = {
+        "ep": int(TASK_ENV.test_num),
+        "step": int(TASK_ENV.take_action_cnt),
+        "stage": int(getattr(TASK_ENV, "stage_id", -1)),
+        "press_cnt": int(getattr(TASK_ENV, "press_cnt", -1)),
+        "press_flag": bool(getattr(TASK_ENV, "press_flag", False)),
+        "block": [round(float(x), 4) for x in blk.get_pose().p],
+        "center": [round(float(x), 4) for x in np.asarray(TASK_ENV.center_pose)[:3]],
+        "target": [round(float(x), 4) for x in np.asarray(TASK_ENV.target_pose)[:3]],
+        "r_open": bool(TASK_ENV.is_right_gripper_open()),
+        "success": bool(TASK_ENV.eval_success),
+    }
+    with open(DIAG_LOG, "a") as f:
+        f.write(json.dumps(rec) + "\n")
+
+
 def eval(TASK_ENV, model, observation):
     if model.instruction is None:
         model.instruction = TASK_ENV.get_instruction()
         print(f"instruction: {model.instruction}")
     for action in model.act(observation)[: model.pi0_step]:
         TASK_ENV.take_action(action)
+        if DIAG_LOG:
+            _diag(TASK_ENV)
 
 
 def reset_model(model):
